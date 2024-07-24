@@ -1,0 +1,5 @@
+.env
+.venv
+app/__pycache__
+app/functions/__pycache__
+app/parsers/__pycache__
