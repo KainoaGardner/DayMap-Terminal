@@ -51,11 +51,7 @@ def user():
         response = requests.get(API_URL + "users/", headers=headersAuth)
         if response.status_code == 200:
             user = response.json()
-            print(
-                TerminalColor.BOLD
-                + f"User: {user["username"]} ID: {user["id"]}"
-                + TerminalColor.END
-            )
+            print(TerminalColor.BOLD + f"User: {user["username"]}" + TerminalColor.END)
 
     else:
         print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
@@ -86,7 +82,7 @@ def remove_user():
                 user = response.json()
                 print(
                     TerminalColor.BOLD
-                    + f"Deleted User: {user["username"]} ID: {user["id"]}"
+                    + f"Deleted User: {user["username"]}"
                     + TerminalColor.END
                 )
                 logout()
