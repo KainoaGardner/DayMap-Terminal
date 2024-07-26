@@ -5,10 +5,16 @@ heatmaps = parser.add_argument_group("Heatmaps")
 heatmaps.add_argument(
     "-hm",
     "--heatmaps",
-    nargs="?",
-    const="a",
-    metavar=("all,a"),
-    help="Show heatmaps",
+    nargs=1,
+    metavar=("title"),
+    help="Show heatmaps by title",
+)
+
+heatmaps.add_argument(
+    "-hma",
+    "--heatmaps_all",
+    action="store_true",
+    help="Show all heatmaps",
 )
 
 heatmaps.add_argument(
@@ -23,7 +29,7 @@ heatmaps.add_argument(
     "-rhm",
     "--remove_heatmap",
     nargs=1,
-    metavar=("id"),
+    metavar=("title"),
     help="remove a heatmap",
 )
 
@@ -31,6 +37,6 @@ heatmaps.add_argument(
     "-uhm",
     "--update_heatmap",
     nargs=3,
-    metavar=("id,title,description"),
+    metavar=("title,new_title,description"),
     help="remove a heatmap",
 )

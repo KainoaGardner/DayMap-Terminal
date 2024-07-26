@@ -13,6 +13,7 @@ def check_login():
             if token:
                 return True
             else:
+                print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
                 return False
     except:
         print(TerminalColor.BOLD + "Cache Error" + TerminalColor.END)

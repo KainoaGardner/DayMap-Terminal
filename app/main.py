@@ -1,5 +1,5 @@
 from . import parser
-
+import sys
 from app.parsers import users, heatmaps, entries
 from app.functions import users, heatmaps, entries
 
@@ -20,25 +20,28 @@ elif args.remove_user:
     users.remove_user()
 
 if args.heatmaps:
-    heatmaps.heatmaps(args.heatmaps)
+    title = args.heatmaps[0]
+    heatmaps.heatmaps_title(title)
+elif args.heatmaps_all:
+    heatmaps.heatmaps_all()
 elif args.create_heatmap:
     title, description = args.create_heatmap
     heatmaps.create_heatmap(title, description)
 elif args.remove_heatmap:
-    id = int(args.remove_heatmap[0])
-    heatmaps.remove_heatmap(id)
+    title = args.remove_heatmap[0]
+    heatmaps.remove_heatmap(title)
 elif args.update_heatmap:
-    id, title, description = args.update_heatmap
-    heatmaps.change_heatmap(int(id), title, description)
+    title, new_title, description = args.update_heatmap
+    heatmaps.change_heatmap(title, title, description)
 
 if args.today:
-    id = int(args.today[0])
-    entries.today(id)
+    title = args.today[0]
+    entries.today(title)
 elif args.today_status:
     entries.today_status()
 elif args.finish:
-    ids = args.finish
-    entries.finish(ids)
+    titles = args.finish
+    entries.finish(titles)
 elif args.unfinish:
-    ids = args.finish
-    entries.unfinish(ids)
+    titles = args.unfinish
+    entries.unfinish(titles)

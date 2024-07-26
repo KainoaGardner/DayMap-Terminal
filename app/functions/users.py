@@ -10,7 +10,10 @@ def login(username, password):
     data = {"grant_type": "password", "username": username, "password": password}
     response = requests.post(API_URL + "auth/token/", data)
     if response.status_code == 200:
-        token = json.dumps(response.json())
+        response = response.json()
+        response.update({"username": username})
+
+        token = json.dumps(response)
 
         try:
             with open(AUTH_CACHE, "w") as file:
@@ -18,7 +21,7 @@ def login(username, password):
         except:
             print(TerminalColor.BOLD + "Cache Error" + TerminalColor.END)
 
-        print(TerminalColor.BOLD + "Logged In" + TerminalColor.END)
+        print(TerminalColor.BOLD + f"{username} Logged In" + TerminalColor.END)
     else:
         print(TerminalColor.BOLD, end="")
         print(response.json(), end="")
@@ -34,14 +37,16 @@ def logout():
             }
         )
         try:
+            with open(AUTH_CACHE, "r") as file:
+                json_object = json.load(file)
+                username = json_object["username"]
+
             with open(AUTH_CACHE, "w") as file:
                 file.write(token)
 
         except:
             print(TerminalColor.BOLD + "Cache Error" + TerminalColor.END)
-        print(TerminalColor.BOLD + "Logged Out" + TerminalColor.END)
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
+        print(TerminalColor.BOLD + f"{username} Logged Out" + TerminalColor.END)
 
 
 def user():
@@ -52,9 +57,6 @@ def user():
         if response.status_code == 200:
             user = response.json()
             print(TerminalColor.BOLD + f"User: {user["username"]}" + TerminalColor.END)
-
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
 
 
 def register(username, password):
@@ -91,5 +93,3 @@ def remove_user():
 
         else:
             print(TerminalColor.BOLD + "Not Removed" + TerminalColor.END)
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)

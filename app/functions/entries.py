@@ -8,13 +8,13 @@ from app import API_URL, AUTH_CACHE
 from .auth import check_login, get_auth
 
 
-def today(id):
+def today(title):
     if check_login():
         today_date = date.today()
         headersAuth = get_auth()
 
         response = requests.get(
-            API_URL + f"heatmaps/{id}",
+            API_URL + f"heatmaps/title/{title}",
             headers=headersAuth,
         )
         if response.status_code == 200:
@@ -25,7 +25,7 @@ def today(id):
             return
 
         response = requests.get(
-            API_URL + f"entry/check_today/{id}/{today_date}",
+            API_URL + f"entry/check_today/{title}/{today_date}",
             headers=headersAuth,
         )
         print(
@@ -40,8 +40,6 @@ def today(id):
 
         else:
             print(TerminalColor.BOLD + f"{heatmap["title"]} ----" + TerminalColor.END)
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
 
 
 def today_status():
@@ -66,9 +64,6 @@ def today_status():
                 + f"{heatmap["title"]} {finished}"
                 + TerminalColor.END
             )
-
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
 
 
 def get_result_id(today_date):
@@ -100,9 +95,45 @@ def get_result_id(today_date):
     return result
 
 
-def finish(ids):
-    print("finish")
+def finish(titles):
+    if check_login():
+        headersAuth = get_auth()
+        today_date = {"date": str(date.today())}
+        for title in titles:
+            response = requests.post(
+                API_URL + f"entry/finish_today/title/{title}/",
+                headers=headersAuth,
+                json=today_date,
+            )
+            if response.status_code == 200:
+                print(TerminalColor.BOLD + f"{title} DONE" + TerminalColor.END)
+
+            else:
+                response = response.json()
+                print(
+                    TerminalColor.BOLD
+                    + f"{title} {response["detail"]}"
+                    + TerminalColor.END
+                )
 
 
-def unfinish(ids):
-    print("unfinish")
+def unfinish(titles):
+    if check_login():
+        headersAuth = get_auth()
+        today_date = {"date": str(date.today())}
+        for title in titles:
+            response = requests.delete(
+                API_URL + f"entry/unfinish_today/title/{title}/",
+                headers=headersAuth,
+                json=today_date,
+            )
+            if response.status_code == 200:
+                print(TerminalColor.BOLD + f"{title} ----" + TerminalColor.END)
+
+            else:
+                response = response.json()
+                print(
+                    TerminalColor.BOLD
+                    + f"{title} {response["detail"]}"
+                    + TerminalColor.END
+                )

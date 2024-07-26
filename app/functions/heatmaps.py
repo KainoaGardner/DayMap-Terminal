@@ -1,19 +1,83 @@
 import requests
 import os
 import json
+import pandas as pd
+from datetime import date
 
-from app.other import TerminalColor
+from app.other import TerminalColor, WEEKDAYS
 from app import API_URL, AUTH_CACHE
 from .auth import check_login, get_auth
 
 
-def heatmaps(args):
-    if "a" in args or "all" in args:
-        heatmaps_all()
-    elif args.isnumeric():
-        heatmaps_id(int(args))
+def heatmaps_title(title):
+    if check_login():
+        headersAuth = get_auth()
+
+        response = requests.get(
+            API_URL + f"heatmaps/title/{title}/", headers=headersAuth
+        )
+        if response.status_code == 200:
+            heatmap = response.json()
+            print(
+                TerminalColor.BOLD
+                + f"{heatmap["title"]}: "
+                + TerminalColor.END
+                + f"{heatmap["description"]}"
+                + "\n"
+            )
+            get_finished_dates(heatmap["id"], headersAuth)
+        else:
+            print(TerminalColor.BOLD, end="")
+            print(response.json(), end="")
+            print(TerminalColor.END)
+
+
+def get_finished_dates(heatmap_id, headersAuth):
+    response = requests.get(
+        API_URL + f"entry/all_entries/{heatmap_id}/", headers=headersAuth
+    )
+    finished_dates = {}
+    if response.status_code == 200:
+        entries = response.json()
+        for entry in entries:
+            finished_dates.update({entry["date"]: True})
+        show_heatmap(finished_dates)
     else:
-        print(TerminalColor.BOLD + "Invalid Id" + TerminalColor.END)
+        print(TerminalColor.BOLD, end="")
+        print(response.json(), end="")
+        print(TerminalColor.END)
+
+
+def show_heatmap(finished_dates):
+    year = date.today().year
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+    date_range = pd.date_range(start_date, end_date)
+    all_days = [[], [], [], [], [], [], []]
+
+    first_day = start_date.weekday()
+    for d in range(first_day):
+        all_days[d].append([None, True])
+
+    for single_date in date_range:
+        day = single_date.weekday()
+        if single_date.strftime("%Y-%m-%d") in finished_dates:
+            all_days[day].append([single_date.strftime("%Y-%m-%d"), True])
+        else:
+            all_days[day].append([single_date.strftime("%Y-%m-%d"), False])
+
+    for i, week in enumerate(all_days):
+        print(WEEKDAYS[i], end=" ")
+
+        for day in week:
+            if not day[0]:
+                print("  ", end="")
+            else:
+                if day[1]:
+                    print("⬛", end="")
+                else:
+                    print("⬜", end="")
+        print("")
 
 
 def heatmaps_all():
@@ -32,31 +96,10 @@ def heatmaps_all():
                     + f"{heatmap["description"]}"
                 )
 
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
-
-
-def heatmaps_id(id):
-    if check_login():
-        headersAuth = get_auth()
-
-        response = requests.get(API_URL + f"heatmaps/{id}", headers=headersAuth)
-        if response.status_code == 200:
-            heatmap = response.json()
-            print(TerminalColor.BOLD + "---Heatmaps---" + TerminalColor.END)
-            print(
-                TerminalColor.BOLD
-                + f"{heatmap["title"]}: "
-                + TerminalColor.END
-                + f"{heatmap["description"]}"
-            )
         else:
             print(TerminalColor.BOLD, end="")
             print(response.json(), end="")
             print(TerminalColor.END)
-
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
 
 
 def create_heatmap(title, description):
@@ -71,7 +114,7 @@ def create_heatmap(title, description):
             heatmap = response.json()
             print(
                 TerminalColor.BOLD
-                + f"Heatmap {heatmap["title"]} Id:{heatmap["id"]} created"
+                + f"Heatmap {heatmap["title"]} created"
                 + TerminalColor.END
             )
         else:
@@ -79,22 +122,19 @@ def create_heatmap(title, description):
             print(response.json(), end="")
             print(TerminalColor.END)
 
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
 
-
-def remove_heatmap(id):
+def remove_heatmap(title):
     if check_login():
         headersAuth = get_auth()
 
         response = requests.delete(
-            API_URL + f"heatmaps/remove/{id}/", headers=headersAuth
+            API_URL + f"heatmaps/remove/title/{title}/", headers=headersAuth
         )
         if response.status_code == 200:
             heatmap = response.json()
             print(
                 TerminalColor.BOLD
-                + f"Heatmap {heatmap["title"]} Id: {heatmap["id"]} removed"
+                + f"Heatmap {heatmap["title"]} removed"
                 + TerminalColor.END
             )
         else:
@@ -118,13 +158,10 @@ def change_heatmap(id, title, description):
             heatmap = response.json()
             print(
                 TerminalColor.BOLD
-                + f"Heatmap {heatmap["title"]} Id: {heatmap["id"]} updated"
+                + f"Heatmap {heatmap["title"]} updated"
                 + TerminalColor.END
             )
         else:
             print(TerminalColor.BOLD, end="")
             print(response.json(), end="")
             print(TerminalColor.END)
-
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
