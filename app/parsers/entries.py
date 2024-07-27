@@ -6,7 +6,7 @@ entries.add_argument(
     "-t",
     "--today",
     nargs=1,
-    metavar=("id"),
+    metavar=("title"),
     help="Check heatmap finished today",
 )
 

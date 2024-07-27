@@ -8,21 +8,26 @@ from app import API_URL, AUTH_CACHE
 from .auth import check_login, get_auth
 
 
+def get_heatmap(title, headersAuth):
+    response = requests.get(
+        API_URL + f"heatmaps/title/{title}",
+        headers=headersAuth,
+    )
+
+    if response.status_code == 200:
+        heatmap = response.json()
+        return heatmap
+
+    else:
+        raise Exception(TerminalColor.BOLD + "Heatmap not found" + TerminalColor.END)
+
+
 def today(title):
     if check_login():
         today_date = date.today()
         headersAuth = get_auth()
 
-        response = requests.get(
-            API_URL + f"heatmaps/title/{title}",
-            headers=headersAuth,
-        )
-        if response.status_code == 200:
-            heatmap = response.json()
-
-        else:
-            print(TerminalColor.BOLD + "Heatmap not found" + TerminalColor.END)
-            return
+        heatmap = get_heatmap(title, headersAuth)
 
         response = requests.get(
             API_URL + f"entry/check_today/{title}/{today_date}",
@@ -45,7 +50,7 @@ def today(title):
 def today_status():
     if check_login():
         today_date = date.today()
-        result = get_result_id(today_date)
+        result = get_status_result(today_date)
 
         print(
             TerminalColor.BOLD
@@ -61,26 +66,57 @@ def today_status():
 
             print(
                 TerminalColor.BOLD
-                + f"{heatmap["title"]} {finished}"
+                + f"{heatmap["title"]} {finished} {heatmap["streak"]} Days"
                 + TerminalColor.END
             )
 
 
-def get_result_id(today_date):
+def get_status_result(today_date):
     headersAuth = get_auth()
     result = []
 
+    get_heatmap_status(result, headersAuth)
+    get_streak_status(result, headersAuth)
+    get_date_status(result, today_date, headersAuth)
+    return result
+
+
+def get_heatmap_status(result, headersAuth):
     response = requests.get(API_URL + f"heatmaps/all/heatmaps/", headers=headersAuth)
     if response.status_code == 200:
         heatmaps = response.json()
         for heatmap in heatmaps:
-            result.append({"title": heatmap["title"], "id": heatmap["id"]})
-    else:
-        print(TerminalColor.BOLD, end="")
-        print(response.json(), end="")
-        print(TerminalColor.END)
 
-    entries = []
+            result.append(
+                {
+                    "title": heatmap["title"],
+                    "id": heatmap["id"],
+                }
+            )
+    else:
+        raise (
+            TerminalColor.BOLD + response.json()["detail"]["msg"] + TerminalColor.END
+        )
+
+
+def get_streak_status(result, headersAuth):
+    for heatmap in result:
+        response = requests.get(
+            API_URL + f"heatmaps/streak/{heatmap["title"]}/", headers=headersAuth
+        )
+        if response.status_code == 200:
+            streak = len(response.json())
+            heatmap.update({"streak": streak})
+
+        else:
+            raise (
+                TerminalColor.BOLD
+                + response.json()["detail"]["msg"]
+                + TerminalColor.END
+            )
+
+
+def get_date_status(result, today_date, headersAuth):
     for heatmap in result:
         response = requests.get(
             API_URL + f"entry/check_today/{heatmap["id"]}/{today_date}",
@@ -91,8 +127,8 @@ def get_result_id(today_date):
             heatmap.update({"date": entry["date"]})
 
         else:
+
             heatmap.update({"date": None})
-    return result
 
 
 def finish(titles):

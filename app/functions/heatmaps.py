@@ -4,7 +4,7 @@ import json
 import pandas as pd
 from datetime import date
 
-from app.other import TerminalColor, WEEKDAYS
+from app.other import TerminalColor, WEEKDAYS, MONTHS
 from app import API_URL, AUTH_CACHE
 from .auth import check_login, get_auth
 
@@ -23,13 +23,18 @@ def heatmaps_title(title):
                 + f"{heatmap["title"]}: "
                 + TerminalColor.END
                 + f"{heatmap["description"]}"
-                + "\n"
             )
-            get_finished_dates(heatmap["id"], headersAuth)
+            show_heatmap_main(heatmap["id"], headersAuth)
         else:
             print(TerminalColor.BOLD, end="")
             print(response.json(), end="")
             print(TerminalColor.END)
+
+
+def show_heatmap_main(heatmap_id, headersAuth):
+    finished_dates = get_finished_dates(heatmap_id, headersAuth)
+    all_days = get_all_days(finished_dates)
+    print_heatmap(all_days)
 
 
 def get_finished_dates(heatmap_id, headersAuth):
@@ -41,14 +46,14 @@ def get_finished_dates(heatmap_id, headersAuth):
         entries = response.json()
         for entry in entries:
             finished_dates.update({entry["date"]: True})
-        show_heatmap(finished_dates)
+        return finished_dates
     else:
-        print(TerminalColor.BOLD, end="")
-        print(response.json(), end="")
-        print(TerminalColor.END)
+        raise Exception(
+            TerminalColor.BOLD + response.json()["detail"]["msg"] + TerminalColor.END
+        )
 
 
-def show_heatmap(finished_dates):
+def get_all_days(finished_dates):
     year = date.today().year
     start_date = date(year, 1, 1)
     end_date = date(year, 12, 31)
@@ -66,6 +71,14 @@ def show_heatmap(finished_dates):
         else:
             all_days[day].append([single_date.strftime("%Y-%m-%d"), False])
 
+    return all_days
+
+
+def print_heatmap(all_days):
+    print(end="     ")
+    for month in MONTHS:
+        print(f"{month}", end="      ")
+    print()
     for i, week in enumerate(all_days):
         print(WEEKDAYS[i], end=" ")
 
@@ -96,6 +109,28 @@ def heatmaps_all():
                     + f"{heatmap["description"]}"
                 )
 
+        else:
+            print(TerminalColor.BOLD, end="")
+            print(response.json(), end="")
+            print(TerminalColor.END)
+
+
+def heatmap_streak(title):
+    if check_login():
+        headersAuth = get_auth()
+
+        response = requests.get(
+            API_URL + f"heatmaps/streak/{title}/", headers=headersAuth
+        )
+        if response.status_code == 200:
+            entries = response.json()
+            streak = len(entries)
+            print(
+                TerminalColor.BOLD
+                + f"{title}: "
+                + f"Streak: {streak} days"
+                + TerminalColor.END
+            )
         else:
             print(TerminalColor.BOLD, end="")
             print(response.json(), end="")

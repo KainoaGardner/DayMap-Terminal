@@ -12,3 +12,17 @@ class TerminalColor:
 
 
 WEEKDAYS = {0: "Mon", 1: "Tue", 2: "Wen", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]

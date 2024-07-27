@@ -24,6 +24,9 @@ if args.heatmaps:
     heatmaps.heatmaps_title(title)
 elif args.heatmaps_all:
     heatmaps.heatmaps_all()
+elif args.streak_heatmap:
+    title = args.streak_heatmap[0]
+    heatmaps.heatmap_streak(title)
 elif args.create_heatmap:
     title, description = args.create_heatmap
     heatmaps.create_heatmap(title, description)

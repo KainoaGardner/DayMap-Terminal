@@ -18,6 +18,14 @@ heatmaps.add_argument(
 )
 
 heatmaps.add_argument(
+    "-shm",
+    "--streak_heatmap",
+    nargs=1,
+    metavar=("title"),
+    help="get heatmap streak",
+)
+
+heatmaps.add_argument(
     "-chm",
     "--create_heatmap",
     nargs=2,
