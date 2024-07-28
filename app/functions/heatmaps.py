@@ -1,6 +1,4 @@
 import requests
-import os
-import json
 import pandas as pd
 from datetime import date
 
@@ -9,15 +7,17 @@ from app import API_URL, AUTH_CACHE
 from .auth import check_login, get_auth
 
 
-def heatmaps_title(title):
+def heatmaps_title(search, search_by_id):
     if check_login():
         headersAuth = get_auth()
 
         response = requests.get(
-            API_URL + f"heatmaps/title/{title}/", headers=headersAuth
+            API_URL + f"heatmaps/single/{search}/?search_by_id={search_by_id}",
+            headers=headersAuth,
         )
         if response.status_code == 200:
             heatmap = response.json()
+            print(heatmap)
             print(
                 TerminalColor.BOLD
                 + f"{heatmap["title"]}: "
@@ -97,7 +97,7 @@ def heatmaps_all():
     if check_login():
         headersAuth = get_auth()
 
-        response = requests.get(API_URL + "heatmaps/all/heatmaps/", headers=headersAuth)
+        response = requests.get(API_URL + "heatmaps/all/", headers=headersAuth)
         if response.status_code == 200:
             heatmaps = response.json()
             print(TerminalColor.BOLD + "---Heatmaps---" + TerminalColor.END)
@@ -115,19 +115,20 @@ def heatmaps_all():
             print(TerminalColor.END)
 
 
-def heatmap_streak(title):
+def heatmap_streak(search, search_by_id):
     if check_login():
         headersAuth = get_auth()
 
         response = requests.get(
-            API_URL + f"heatmaps/streak/{title}/", headers=headersAuth
+            API_URL + f"heatmaps/streak/{search}/?search_by_id={search_by_id}",
+            headers=headersAuth,
         )
         if response.status_code == 200:
             entries = response.json()
             streak = len(entries)
             print(
                 TerminalColor.BOLD
-                + f"{title}: "
+                + f"{search}: "
                 + f"Streak: {streak} days"
                 + TerminalColor.END
             )

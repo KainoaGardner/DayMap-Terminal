@@ -48,3 +48,10 @@ heatmaps.add_argument(
     metavar=("title,new_title,description"),
     help="remove a heatmap",
 )
+
+heatmaps.add_argument(
+    "-id",
+    "--id_search",
+    action="store_true",
+    help="Search heatmap by id",
+)
