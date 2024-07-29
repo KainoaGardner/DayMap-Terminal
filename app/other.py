@@ -26,3 +26,18 @@ MONTHS = [
     "Nov",
     "Dec",
 ]
+
+
+def bold_print(text):
+    print(TerminalColor.BOLD + text + TerminalColor.END)
+
+
+def bold_input(text):
+    answer = input(TerminalColor.BOLD + text + TerminalColor.END)
+    return answer
+
+
+def check_search_by_id(id_search):
+    if id_search:
+        return "true"
+    return "false"

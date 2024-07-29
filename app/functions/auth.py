@@ -68,6 +68,5 @@ def check_response(response):
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(
-            TerminalColor.BOLD + response.json()["detail"]["msg"] + TerminalColor.END
-        )
+        print(response.json())
+        raise Exception(response.json()["detail"])

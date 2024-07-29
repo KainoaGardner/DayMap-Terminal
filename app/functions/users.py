@@ -1,61 +1,50 @@
-import requests
 import json
 
-from app.other import TerminalColor
-from app import API_URL
-from .auth import check_login, remove_auth, update_auth, get_auth, get_auth_token
-from .user_calls import get_users
+from app.other import bold_print, bold_input
+
+from app.functions import auth
+from app.api_calls import user_calls
 
 
+# Takes username and password inputs calls to get access token saves to json cache for future requests
 def login(username, password):
     data = {"grant_type": "password", "username": username, "password": password}
-    response = get_auth_token(data)
+    response = auth.get_auth_token(data)
     response.update({"username": username})
     token = json.dumps(response)
-    update_auth(token)
-    print(TerminalColor.BOLD + f"{username} Logged In" + TerminalColor.END)
+    auth.update_auth(token)
+    bold_print(f"{username} Logged In")
 
 
+# Checks if logged in by checking json cache reset cache
 def logout():
-    check_login()
-    username = remove_auth()
-    print(TerminalColor.BOLD + f"{username} Logged Out" + TerminalColor.END)
+    auth.check_login()
+    username = auth.remove_auth()
+    bold_print(f"{username} Logged Out")
 
 
+# call api to get user based on access token
 def user():
-    check_login()
-    headersAuth = get_auth()
-    response = get_users(headersAuth)
-    print(TerminalColor.BOLD + f"User: {response["username"]}" + TerminalColor.END)
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    response = user_calls.get_users(headersAuth)
+    bold_print(f"User: {response["username"]}")
 
 
+# call api to make new user with given username and password
 def register(username, password):
     user = {"username": username, "password": password}
-    response = requests.post(API_URL + "users/create/", json=user)
+    response = user_calls.post_users_create(user)
+    bold_print(f"User {username} Registered")
 
-    print(TerminalColor.BOLD + f"User {username} Registered" + TerminalColor.END)
 
-
+# call api to remove current logged in user
 def remove_user():
-    check_login()
-    answer = input(
-        TerminalColor.BOLD
-        + f"Are you sure you want to remove your account? [y/n]: "
-        + TerminalColor.END
-    )
+    auth.check_login()
+    answer = bold_input(f"Are you sure you want to remove your account? [y/n]: ")
     if answer.lower() == "y":
-        headersAuth = get_auth()
-        response = requests.delete(API_URL + "users/remove/", headers=headersAuth)
-        if response.status_code == 200:
-            user = response.json()
-            print(
-                TerminalColor.BOLD
-                + f"Deleted User: {user["username"]}"
-                + TerminalColor.END
-            )
-            logout()
-        else:
-            print(response.json())
-
+        headersAuth = auth.get_auth()
+        response = user_calls.delete_users_remove(headersAuth)
+        logout()
     else:
-        print(TerminalColor.BOLD + "Not Removed" + TerminalColor.END)
+        bold_print("Not Removed")

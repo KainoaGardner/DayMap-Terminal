@@ -1,56 +1,35 @@
-import requests
 import pandas as pd
 from datetime import date
 
-from app.other import TerminalColor, WEEKDAYS, MONTHS
-from app import API_URL, AUTH_CACHE
-from .auth import check_login, get_auth
+from app.other import bold_print, WEEKDAYS, MONTHS
+from app.functions import auth
+from app.api_calls import heatmap_calls, entries_calls
 
 
+# search for users given heatmap and print date heatmap
 def heatmaps_title(search, search_by_id):
-    if check_login():
-        headersAuth = get_auth()
-
-        response = requests.get(
-            API_URL + f"heatmaps/single/{search}/?search_by_id={search_by_id}",
-            headers=headersAuth,
-        )
-        if response.status_code == 200:
-            heatmap = response.json()
-            print(heatmap)
-            print(
-                TerminalColor.BOLD
-                + f"{heatmap["title"]}: "
-                + TerminalColor.END
-                + f"{heatmap["description"]}"
-            )
-            show_heatmap_main(heatmap["id"], headersAuth)
-        else:
-            print(TerminalColor.BOLD, end="")
-            print(response.json(), end="")
-            print(TerminalColor.END)
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    response = heatmap_calls.get_heatmaps_single(search, search_by_id, headersAuth)
+    show_heatmap_main(response["id"], headersAuth)
 
 
+# get all finished dates print heatmap
 def show_heatmap_main(heatmap_id, headersAuth):
     finished_dates = get_finished_dates(heatmap_id, headersAuth)
     all_days = get_all_days(finished_dates)
     print_heatmap(all_days)
 
 
+# get all finished dates in heatmap
+
+
 def get_finished_dates(heatmap_id, headersAuth):
-    response = requests.get(
-        API_URL + f"entry/all_entries/{heatmap_id}/", headers=headersAuth
-    )
+    response = entries_calls.get_all_entries(heatmap_id, "true", headersAuth)
     finished_dates = {}
-    if response.status_code == 200:
-        entries = response.json()
-        for entry in entries:
-            finished_dates.update({entry["date"]: True})
-        return finished_dates
-    else:
-        raise Exception(
-            TerminalColor.BOLD + response.json()["detail"]["msg"] + TerminalColor.END
-        )
+    for entry in response:
+        finished_dates.update({entry["date"]: True})
+    return finished_dates
 
 
 def get_all_days(finished_dates):
@@ -93,111 +72,49 @@ def print_heatmap(all_days):
         print("")
 
 
+# get all of users heatmaps and print them
 def heatmaps_all():
-    if check_login():
-        headersAuth = get_auth()
-
-        response = requests.get(API_URL + "heatmaps/all/", headers=headersAuth)
-        if response.status_code == 200:
-            heatmaps = response.json()
-            print(TerminalColor.BOLD + "---Heatmaps---" + TerminalColor.END)
-            for heatmap in heatmaps:
-                print(
-                    TerminalColor.BOLD
-                    + f"{heatmap["title"]}: "
-                    + TerminalColor.END
-                    + f"{heatmap["description"]}"
-                )
-
-        else:
-            print(TerminalColor.BOLD, end="")
-            print(response.json(), end="")
-            print(TerminalColor.END)
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    response = heatmap_calls.get_heatmaps_all(headersAuth)
+    bold_print("---Heatmaps---")
+    for heatmap in response:
+        bold_print(f"{heatmap["title"]}: {heatmap["description"]}")
 
 
+# get seached heatmap finished days in a row streak
 def heatmap_streak(search, search_by_id):
-    if check_login():
-        headersAuth = get_auth()
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    response = heatmap_calls.get_heatmaps_streak(search, search_by_id, headersAuth)
 
-        response = requests.get(
-            API_URL + f"heatmaps/streak/{search}/?search_by_id={search_by_id}",
-            headers=headersAuth,
-        )
-        if response.status_code == 200:
-            entries = response.json()
-            streak = len(entries)
-            print(
-                TerminalColor.BOLD
-                + f"{search}: "
-                + f"Streak: {streak} days"
-                + TerminalColor.END
-            )
-        else:
-            print(TerminalColor.BOLD, end="")
-            print(response.json(), end="")
-            print(TerminalColor.END)
+    streak = len(response)
+    bold_print(f"{search}: Streak: {streak} days")
 
 
+# create new heatmap with given title and description at authorized user
 def create_heatmap(title, description):
-    if check_login():
-        data = {"title": title, "description": description}
-        headersAuth = get_auth()
-
-        response = requests.post(
-            API_URL + "heatmaps/create/", json=data, headers=headersAuth
-        )
-        if response.status_code == 200:
-            heatmap = response.json()
-            print(
-                TerminalColor.BOLD
-                + f"Heatmap {heatmap["title"]} created"
-                + TerminalColor.END
-            )
-        else:
-            print(TerminalColor.BOLD, end="")
-            print(response.json(), end="")
-            print(TerminalColor.END)
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    data = {"title": title, "description": description}
+    response = heatmap_calls.post_heatmaps_create(data, headersAuth)
+    bold_print(f"Heatmap {response["title"]} created")
 
 
-def remove_heatmap(title):
-    if check_login():
-        headersAuth = get_auth()
-
-        response = requests.delete(
-            API_URL + f"heatmaps/remove/title/{title}/", headers=headersAuth
-        )
-        if response.status_code == 200:
-            heatmap = response.json()
-            print(
-                TerminalColor.BOLD
-                + f"Heatmap {heatmap["title"]} removed"
-                + TerminalColor.END
-            )
-        else:
-            print(TerminalColor.BOLD, end="")
-            print(response.json(), end="")
-            print(TerminalColor.END)
-
-    else:
-        print(TerminalColor.BOLD + "Not Logged In" + TerminalColor.END)
+# remove searched heatamp at authorized user
+def remove_heatmap(search, search_by_id):
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    response = heatmap_calls.delete_heatmaps_remove(search, search_by_id, headersAuth)
+    bold_print(f"Heatmap {response["title"]} removed")
 
 
-def change_heatmap(id, title, description):
-    if check_login():
-        data = {"title": title, "description": description}
-        headersAuth = get_auth()
-
-        response = requests.put(
-            API_URL + f"heatmaps/change/{id}/", json=data, headers=headersAuth
-        )
-        if response.status_code == 200:
-            heatmap = response.json()
-            print(
-                TerminalColor.BOLD
-                + f"Heatmap {heatmap["title"]} updated"
-                + TerminalColor.END
-            )
-        else:
-            print(TerminalColor.BOLD, end="")
-            print(response.json(), end="")
-            print(TerminalColor.END)
+# change searched heatmap with new title and description
+def change_heatmap(search, search_by_id, new_title, new_description):
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    data = {"title": new_title, "description": new_description}
+    response = heatmap_calls.put_heatmaps_change(
+        search, search_by_id, data, headersAuth
+    )
+    bold_print(f"Heatmap {response["title"]} updated")

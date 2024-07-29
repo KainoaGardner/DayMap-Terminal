@@ -3,3 +3,5 @@
 app/__pycache__
 app/functions/__pycache__
 app/parsers/__pycache__
+app/args_main/__pycache__
+app/api_calls/__pycache__

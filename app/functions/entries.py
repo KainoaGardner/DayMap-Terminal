@@ -1,175 +1,93 @@
 import requests
-import os
-import json
 from datetime import date
 
-from app.other import TerminalColor
-from app import API_URL, AUTH_CACHE
-from .auth import check_login, get_auth
+from app.other import bold_print
+from app import API_URL
+from app.functions import auth
+from app.api_calls import entries_calls, heatmap_calls
 
 
-def get_heatmap(title, headersAuth):
-    response = requests.get(
-        API_URL + f"heatmaps/title/{title}",
-        headers=headersAuth,
+def today(search, search_by_id):
+    auth.check_login()
+    today_date = date.today()
+    headersAuth = auth.get_auth()
+    heatmap = heatmap_calls.get_heatmaps_single(search, search_by_id, headersAuth)
+    response = entries_calls.get_entry_check_today(
+        search, search_by_id, today_date, headersAuth
     )
-
+    bold_print(str(today_date))
     if response.status_code == 200:
-        heatmap = response.json()
-        return heatmap
-
+        bold_print(f"{heatmap["title"]} DONE")
     else:
-        raise Exception(TerminalColor.BOLD + "Heatmap not found" + TerminalColor.END)
-
-
-def today(title):
-    if check_login():
-        today_date = date.today()
-        headersAuth = get_auth()
-
-        heatmap = get_heatmap(title, headersAuth)
-
-        response = requests.get(
-            API_URL + f"entry/check_today/{title}/{today_date}",
-            headers=headersAuth,
-        )
-        print(
-            TerminalColor.BOLD
-            + TerminalColor.UNDERLINE
-            + str(today_date)
-            + TerminalColor.END
-        )
-
-        if response.status_code == 200:
-            print(TerminalColor.BOLD + f"{heatmap["title"]} DONE" + TerminalColor.END)
-
-        else:
-            print(TerminalColor.BOLD + f"{heatmap["title"]} ----" + TerminalColor.END)
+        bold_print(f"{heatmap["title"]} NOT DONE")
 
 
 def today_status():
-    if check_login():
-        today_date = date.today()
-        result = get_status_result(today_date)
+    auth.check_login()
+    today_date = date.today()
+    result = get_status_result(today_date)
+    bold_print(f"{str(today_date)}\n")
 
-        print(
-            TerminalColor.BOLD
-            + TerminalColor.UNDERLINE
-            + "Finished "
-            + str(today_date)
-            + TerminalColor.END
-        )
-        for heatmap in result:
-            finished = "----"
-            if heatmap["date"]:
-                finished = "DONE"
-
-            print(
-                TerminalColor.BOLD
-                + f"{heatmap["title"]} {finished} {heatmap["streak"]} Days"
-                + TerminalColor.END
-            )
+    for heatmap in result:
+        finished = "----"
+        if heatmap["date"]:
+            finished = "DONE"
+        bold_print(f"{heatmap["title"]} {finished} {heatmap["streak"]}")
 
 
 def get_status_result(today_date):
-    headersAuth = get_auth()
-    result = []
-
-    get_heatmap_status(result, headersAuth)
+    headersAuth = auth.get_auth()
+    result = heatmap_calls.get_heatmaps_all(headersAuth)
     get_streak_status(result, headersAuth)
     get_date_status(result, today_date, headersAuth)
     return result
 
 
-def get_heatmap_status(result, headersAuth):
-    response = requests.get(API_URL + f"heatmaps/all/heatmaps/", headers=headersAuth)
-    if response.status_code == 200:
-        heatmaps = response.json()
-        for heatmap in heatmaps:
-
-            result.append(
-                {
-                    "title": heatmap["title"],
-                    "id": heatmap["id"],
-                }
-            )
-    else:
-        raise (
-            TerminalColor.BOLD + response.json()["detail"]["msg"] + TerminalColor.END
-        )
-
-
 def get_streak_status(result, headersAuth):
     for heatmap in result:
-        response = requests.get(
-            API_URL + f"heatmaps/streak/{heatmap["title"]}/", headers=headersAuth
-        )
-        if response.status_code == 200:
-            streak = len(response.json())
-            heatmap.update({"streak": streak})
-
-        else:
-            raise (
-                TerminalColor.BOLD
-                + response.json()["detail"]["msg"]
-                + TerminalColor.END
-            )
+        response = heatmap_calls.get_heatmaps_streak(heatmap["id"], "true", headersAuth)
+        streak = len(response)
+        heatmap.update({"streak": streak})
 
 
 def get_date_status(result, today_date, headersAuth):
     for heatmap in result:
-        response = requests.get(
-            API_URL + f"entry/check_today/{heatmap["id"]}/{today_date}",
-            headers=headersAuth,
+        response = entries_calls.get_entry_check_today(
+            heatmap["id"], "true", today_date, headersAuth
         )
         if response.status_code == 200:
-            entry = response.json()
-            heatmap.update({"date": entry["date"]})
-
+            heatmap.update({"date": response.json()["date"]})
         else:
 
             heatmap.update({"date": None})
 
 
-def finish(titles):
-    if check_login():
-        headersAuth = get_auth()
-        today_date = {"date": str(date.today())}
-        for title in titles:
-            response = requests.post(
-                API_URL + f"entry/finish_today/title/{title}/",
-                headers=headersAuth,
-                json=today_date,
-            )
-            if response.status_code == 200:
-                print(TerminalColor.BOLD + f"{title} DONE" + TerminalColor.END)
-
-            else:
-                response = response.json()
-                print(
-                    TerminalColor.BOLD
-                    + f"{title} {response["detail"]}"
-                    + TerminalColor.END
-                )
+def finish(searches, search_by_id):
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    today_date = date.today()
+    for search in searches:
+        heatmap = heatmap_calls.get_heatmaps_single(search, search_by_id, headersAuth)
+        response = entries_calls.post_entry_finish_today(
+            search, search_by_id, today_date, headersAuth
+        )
+        if response.status_code == 200:
+            bold_print(f"{heatmap["title"]} DONE")
+        else:
+            bold_print(f"{heatmap["title"]} {response.json()["detail"]}")
 
 
-def unfinish(titles):
-    if check_login():
-        headersAuth = get_auth()
-        today_date = {"date": str(date.today())}
-        for title in titles:
-            response = requests.delete(
-                API_URL + f"entry/unfinish_today/title/{title}/",
-                headers=headersAuth,
-                json=today_date,
-            )
-            if response.status_code == 200:
-                print(TerminalColor.BOLD + f"{title} ----" + TerminalColor.END)
+def unfinish(searches, search_by_id):
+    auth.check_login()
+    headersAuth = auth.get_auth()
+    today_date = date.today()
 
-            else:
-                response = response.json()
-                print(
-                    TerminalColor.BOLD
-                    + f"{title} {response["detail"]}"
-                    + TerminalColor.END
-                )
+    for search in searches:
+        heatmap = heatmap_calls.get_heatmaps_single(search, search_by_id, headersAuth)
+        response = entries_calls.delete_entry_unfinish_today(
+            search, search_by_id, today_date, headersAuth
+        )
+        if response.status_code == 200:
+            bold_print(f"{heatmap["title"]} Unfinished")
+        else:
+            bold_print(f"{heatmap["title"]} {response.json()["detail"]}")

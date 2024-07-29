@@ -4,10 +4,13 @@ from dotenv.main import load_dotenv
 
 load_dotenv()
 
-msg = "DayMap Daily Task Heatmap for Terminal"
-parser = argparse.ArgumentParser(description=msg)
-
 API_URL = os.getenv("API_URL")
 AUTH_CACHE = os.getenv("AUTH_CACHE")
 
-import app.main
+msg = "DayMap Daily Task Heatmap for Terminal"
+parser = argparse.ArgumentParser(description=msg)
+
+from app.parsers import users, heatmaps, entries
+
+args = parser.parse_args()
+from app.args_main import users_main, heatmaps_main, entires_main
